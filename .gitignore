@@ -1,0 +1,78 @@
+# Build artifacts
+*.obj
+*.o
+*.exe
+*.pdb
+*.ilk
+*.idb
+*.ipdb
+*.iobj
+*.lib
+*.dll
+*.exp
+*.sbr
+*.suo
+*.user
+*.ncb
+*.aps
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*.bak
+*.cache
+*.tlog
+*.log
+*.lastbuildstate
+
+# Visual Studio / MSVC
+.vs/
+x64/
+Win32/
+Debug/
+Release/
+**/Debug/
+**/Release/
+*.vcxproj.user
+
+# Compiled test binaries (keep sources)
+tests/**/*_gcc
+tests/**/*_clang
+tests/**/*_msvc
+tests/**/*_msvc.exe
+tests/**/*_gcc_popcnt
+tests/**/*_clang_popcnt
+tests/**/*_gcc_bmi
+tests/**/*_clang_bmi
+tests/**/*_msvc_avx2.exe
+tests/**/*_perf_gcc*
+tests/**/*_perf_clang*
+tests/**/*_perf_msvc*
+tests/**/_sort_dbg*
+tests/**/_mt_dump*
+tests/**/*.exe
+tests/**/*.out
+
+# Perf dumps / temp asm (optional keep - ignore large outs)
+tests/**/_perf_out_*.txt
+tests/**/_tmp_*.asm
+tests/**/_tmp_*.cpp
+tests/bit/_popcnt_inline_check.cpp
+
+# CMake / misc build trees
+**/build*/
+**/CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*~
+
+# Secrets
+.env
+.env.*
+credentials.json
+*.pem
+*.key

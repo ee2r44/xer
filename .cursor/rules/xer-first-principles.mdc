@@ -1,0 +1,59 @@
+---
+description: xer 第一守则。库由用户实现；代理只给建议，并在 tests/ 写可在 MSVC、GCC、Clang 上运行的测试。
+alwaysApply: true
+---
+
+# 第一守则
+
+## 职责
+
+- 不得创建、修改、删除 `include/**`。库实现由用户负责。
+- 只做两件事：给出可粘贴的修改建议；在 `tests/` 编写正确性测试和性能测试。
+- 需要改库时，只在回复里给出建议，由用户自行写入 `include/`。
+
+## A/B 与对照实验
+
+- 需要对比「当前 `include/` 实现」与旧策略 / 变体时：**禁止改原文件**。
+- 做法：把相关头文件（或整棵 `include/`）镜像到 `tests/` 下的副本目录，只改副本；用额外 `-I` / `XER_INCLUDE_DIR` 指向副本来编译对照二进制。
+- 实验结束后可保留或删除 `tests/` 下的镜像；**永远不要**为了跑旧策略而回写、打补丁或临时替换 `include/**`。
+
+## 库约束
+
+只约束 `include/` 中的实现，以及给出的实现建议。不约束 `tests/`。
+
+- 至少 C++23，与 `static_assert(XER_CPLUSPLUS >= 202302L, ...)` 一致。
+- 禁止 `try` / `throw` / `catch`。函数默认 `noexcept`，不设计会抛异常的接口。
+- 禁止分配型 `new` / `delete`，包括 `new[]` / `delete[]`。仅当必须在已有存储上启动对象生命周期时，允许 placement `new`（如 `::new (p) T(...)`），并为此允许 `#include <new>`；不得借此使用 `::operator new` / `::operator delete` 做堆分配。
+- 允许 C 标准库（如 `<stdlib.h>`）和 C++ 提供的 C 标准库包装头（如 `<cstdlib>`、`<cstddef>`、`<cstdint>`）。除此之外只允许 `<type_traits>`，以及上一条所述的、仅服务于 placement new 的 `<new>`。不使用其余 C++ 标准库头，例如 `<vector>`、`<string>`、`<memory>`、`<exception>`。
+- 性能和稳定性优先于 API 易用性。少隐藏分配，少意外分支，行为可预测。
+
+```cpp
+// 禁止：抛异常，或使用分配型 new / delete
+void push(T v) { if (!buf) throw std::bad_alloc{}; }
+T* p = new T;
+delete p;
+
+// 允许：noexcept，用 C 库分配；必要时用 placement new 构造
+void push(T v) noexcept;
+T* p = static_cast<T*>(std::malloc(sizeof(T)));
+::new (static_cast<void*>(p)) T(v);
+std::free(p);
+```
+
+## 测试
+
+- 正确性测试和性能测试只放在 `tests/`。
+- 测试可以使用 C++ 标准库来构造输入、检查结果、计时，以及与标准库实现对照。此许可不延伸到库实现。
+- 不在测试里用异常去模拟库的错误处理约定。库的失败路径按库自己的 `noexcept` 接口来测。
+- 同一套测试必须在三套环境下都能编译并运行，才算落地。三套都使用至少 C++23：
+  - 本机 Windows MSVC：Visual Studio Community 2022 安装在 `D:\develop\c++\vs`（非默认路径）。x64 工具链用 `D:\develop\c++\vs\VC\Auxiliary\Build\vcvars64.bat`，`cl` 在 `D:\develop\c++\vs\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe`。命令行编译用 `/std:c++latest`；也可用现有 x64 工程。不要只查 `C:\Program Files\Microsoft Visual Studio`。
+  - WSL Ubuntu GCC：`g++ -std=c++23`
+  - WSL Ubuntu Clang：`clang++ -std=c++23`
+- 测试保持可移植。编译器扩展、内联汇编，以及只在某一编译器成立的断言，必须显式分支，并且另外两个环境仍有对应路径。
+- 每写一批测试，都要实际编过并跑过这三套，而不是只在 MSVC 工程里通过。
+
+```cpp
+// 允许：测试里用标准库对照结果
+#include <vector>
+assert(got == expected);
+```
